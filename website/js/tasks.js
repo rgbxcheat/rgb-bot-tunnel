@@ -4,7 +4,7 @@
 
 let API_BASE = "";
 let busy = false;
-let currentTaskIndex = -1;
+let currentTaskIndex = 0;
 
 const TASK_LINKS = {
     youtube: "https://www.youtube.com/@RGBXCHEAT",
@@ -38,6 +38,8 @@ const completed = new Set();
 const taskList = document.getElementById("taskList");
 const getKeyButton = document.getElementById("getKey");
 const taskStatus = document.getElementById("taskStatus");
+const progressBar = document.getElementById("progressBar");
+const progressText = document.getElementById("progressText");
 
 
 function setStatus(text, success) {
@@ -49,6 +51,17 @@ function setStatus(text, success) {
     } else {
         taskStatus.classList.remove("success");
     }
+}
+
+
+function updateProgress() {
+
+    const count = completed.size;
+    const percent = (count / TASKS.length) * 100;
+
+    progressBar.style.width = percent + "%";
+    progressText.textContent =
+        count + " / " + TASKS.length;
 }
 
 
@@ -90,45 +103,41 @@ function renderTasks() {
 
             action.appendChild(done);
 
-        } else if (
-            busy &&
-            index === currentTaskIndex
-        ) {
-
-            const button = document.createElement("button");
-
-            button.className = "btn";
-            button.type = "button";
-            button.disabled = true;
-            button.textContent = "WAIT 5s";
-
-            action.appendChild(button);
-
-        } else if (
-            index === currentTaskIndex + 1 &&
-            !busy
-        ) {
-
-            const button = document.createElement("button");
-
-            button.className = "btn";
-            button.type = "button";
-            button.textContent = "OPEN";
-
-            button.addEventListener("click", function () {
-                startTask(index);
-            });
-
-            action.appendChild(button);
-
         } else {
 
             const button = document.createElement("button");
 
             button.className = "btn";
             button.type = "button";
-            button.disabled = true;
-            button.textContent = "LOCKED";
+
+            /*
+             * Only the current task is unlocked.
+             */
+            if (
+                index === currentTaskIndex &&
+                !busy
+            ) {
+
+                button.disabled = false;
+                button.textContent = "OPEN";
+
+                button.addEventListener(
+                    "click",
+                    function () {
+                        startTask(index);
+                    }
+                );
+
+            } else {
+
+                button.disabled = true;
+
+                if (index < currentTaskIndex) {
+                    button.textContent = "DONE";
+                } else {
+                    button.textContent = "LOCKED";
+                }
+            }
 
             action.appendChild(button);
         }
@@ -141,14 +150,19 @@ function renderTasks() {
     });
 
 
-    const allCompleted =
-        completed.size === TASKS.length;
+    updateProgress();
 
+
+    /*
+     * GET CODE is enabled only after
+     * all 3 tasks are completed.
+     */
     getKeyButton.disabled =
-        !allCompleted || busy;
+        completed.size !== TASKS.length ||
+        busy;
 
 
-    if (allCompleted) {
+    if (completed.size === TASKS.length) {
 
         setStatus(
             "ALL TASKS COMPLETED — GET YOUR CODE",
@@ -157,23 +171,12 @@ function renderTasks() {
 
     } else if (!busy) {
 
-        const nextIndex = currentTaskIndex + 1;
+        const current = TASKS[currentTaskIndex];
 
-        if (TASKS[nextIndex]) {
-
-            setStatus(
-                "NEXT TASK: " +
-                TASKS[nextIndex].name,
-                false
-            );
-
-        } else {
+        if (current) {
 
             setStatus(
-                completed.size +
-                " / " +
-                TASKS.length +
-                " TASKS COMPLETED",
+                "NEXT TASK: " + current.name,
                 false
             );
         }
@@ -184,9 +187,7 @@ function renderTasks() {
 function wait(seconds) {
 
     return new Promise(function (resolve) {
-
         setTimeout(resolve, seconds * 1000);
-
     });
 }
 
@@ -226,7 +227,7 @@ async function startTask(index) {
         return;
     }
 
-    if (index !== currentTaskIndex + 1) {
+    if (index !== currentTaskIndex) {
         return;
     }
 
@@ -249,7 +250,6 @@ async function startTask(index) {
     }
 
     busy = true;
-    currentTaskIndex = index;
 
     renderTasks();
 
@@ -265,13 +265,13 @@ async function startTask(index) {
 
 
     /*
-     * Wait exactly 5 seconds.
+     * Five second countdown.
      */
     for (let seconds = 5; seconds >= 1; seconds--) {
 
         setStatus(
             task.name +
-            " OPENED — NEXT TASK IN " +
+            " — WAIT " +
             seconds +
             "s",
             false
@@ -281,63 +281,68 @@ async function startTask(index) {
     }
 
 
-    /*
-     * Verify current task with server.
-     */
     try {
 
         setStatus(
-            "VERIFYING " +
+            "RECORDING " +
             task.name +
             "...",
             false
         );
 
+
+        /*
+         * Record the completed task
+         * on the server.
+         */
         await verifyTask(task);
+
 
         completed.add(task.id);
 
         busy = false;
 
-        renderTasks();
+
+        /*
+         * Move green progress bar.
+         */
+        updateProgress();
 
 
         /*
-         * If this was the final task,
-         * enable GET CODE.
+         * Move to the next task.
          */
-        if (completed.size === TASKS.length) {
+        if (completed.size < TASKS.length) {
 
-            setStatus(
-                "ALL TASKS COMPLETED — GET YOUR CODE",
-                true
-            );
+            currentTaskIndex++;
 
-            return;
-        }
+            renderTasks();
 
-
-        /*
-         * Automatically open the next task.
-         */
-        const nextIndex = index + 1;
-        const nextTask = TASKS[nextIndex];
-
-        if (nextTask) {
+            const nextTask =
+                TASKS[currentTaskIndex];
 
             setStatus(
                 task.name +
-                " COMPLETED — OPENING " +
-                nextTask.name +
-                "...",
+                " COMPLETED — NEXT: " +
+                nextTask.name,
                 true
             );
 
-            await wait(1);
+        } else {
 
-            startTask(nextIndex);
+            /*
+             * 3/3 completed.
+             * GET CODE becomes enabled.
+             */
+            currentTaskIndex = TASKS.length;
+
+            renderTasks();
+
+            setStatus(
+                "3 / 3 TASKS COMPLETED — GET CODE UNLOCKED",
+                true
+            );
         }
-
 
     } catch (error) {
 
@@ -399,7 +404,6 @@ async function loadServer() {
         );
 
         if (!response.ok) {
-
             throw new Error(
                 "CURRENT_TUNNEL_NOT_FOUND"
             );
@@ -409,7 +413,6 @@ async function loadServer() {
             await response.json();
 
         if (!config.base_url) {
-
             throw new Error(
                 "SERVER_URL_NOT_FOUND"
             );
@@ -423,7 +426,7 @@ async function loadServer() {
 
         await startTaskSession();
 
-        currentTaskIndex = -1;
+        currentTaskIndex = 0;
 
         renderTasks();
 
@@ -527,10 +530,10 @@ getKeyButton.addEventListener(
 
 
 /*
- * Initial page.
+ * Initial state.
  */
+updateProgress();
 renderTasks();
-
 loadServer();
 
 })();
