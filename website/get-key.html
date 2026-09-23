@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your Code - RGB BOT V1</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<main class="wrap">
+
+    <header class="header">
+        <div class="logo">RGB <span>BOT</span> V1</div>
+        <div class="sub">YOUR ACCESS CODE</div>
+    </header>
+
+    <section class="hero-card">
+
+        <div class="badge">STEP 2 / 2</div>
+
+        <h1>YOUR CODE</h1>
+
+        <p id="message">
+            Generating your personal code...
+        </p>
+
+        <div id="keyBox" class="key-box">
+            —
+        </div>
+
+        <button id="copyButton" class="mainbtn primary">
+            COPY CODE
+        </button>
+
+        <div id="copyStatus" class="copy-status"></div>
+
+        <div class="expiry-card">
+            <span>CODE EXPIRES</span>
+            <strong id="expiry">Loading...</strong>
+        </div>
+
+        <div class="countdown">
+            <span>TIME REMAINING</span>
+            <strong id="countdown">--:--:--</strong>
+        </div>
+
+        <a class="mainbtn secondary" href="index.html">
+            BACK TO HOME
+        </a>
+
+        <div class="note">
+            This code is valid for 24 hours from generation.
+        </div>
+
+    </section>
+
+    <footer>
+        RGB BOT V1 • SECURE KEY SYSTEM
+    </footer>
+
+</main>
+
+<script>
+
+const API_BASE = "https://affordable-objective-journey-hiking.trycloudflare.com";
+const API_URL = API_BASE + "/api/get-key";
+
+const message =
+    document.getElementById("message");
+
+const keyBox =
+    document.getElementById("keyBox");
+
+const expiry =
+    document.getElementById("expiry");
+
+const countdown =
+    document.getElementById("countdown");
+
+const copyButton =
+    document.getElementById("copyButton");
+
+const copyStatus =
+    document.getElementById("copyStatus");
+
+let generatedKey = "";
+let expiresAt = null;
+let timer = null;
+
+
+function formatDate(date) {
+
+    return date.toLocaleString(
+        undefined,
+        {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        }
+    );
+}
+
+
+function updateCountdown() {
+
+    if (!expiresAt) {
+        countdown.textContent = "--:--:--";
+        return;
+    }
+
+    const remaining =
+        expiresAt.getTime() - Date.now();
+
+    if (remaining <= 0) {
+
+        countdown.textContent = "EXPIRED";
+
+        countdown.classList.add("expired");
+
+        if (timer) {
+            clearInterval(timer);
+        }
+
+        return;
+    }
+
+    const totalSeconds =
+        Math.floor(remaining / 1000);
+
+    const hours =
+        Math.floor(totalSeconds / 3600);
+
+    const minutes =
+        Math.floor(
+            (totalSeconds % 3600) / 60
+        );
+
+    const seconds =
+        totalSeconds % 60;
+
+    countdown.textContent =
+        String(hours).padStart(2, "0") + ":" +
+        String(minutes).padStart(2, "0") + ":" +
+        String(seconds).padStart(2, "0");
+}
+
+
+async function generateKey() {
+
+    try {
+
+        message.textContent =
+            "Connecting to RGB BOT V1 server...";
+
+        const response =
+            await fetch(
+                API_URL,
+                {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    }
+                }
+            );
+
+        if (!response.ok) {
+            throw new Error("SERVER_ERROR");
+        }
+
+        const data =
+            await response.json();
+
+        if (!data.success || !data.key) {
+            throw new Error("KEY_ERROR");
+        }
+
+        generatedKey = data.key;
+
+        expiresAt =
+            new Date(data.expires_at);
+
+        keyBox.textContent =
+            generatedKey;
+
+        expiry.textContent =
+            formatDate(expiresAt);
+
+        message.textContent =
+            "CODE GENERATED SUCCESSFULLY";
+
+        copyButton.disabled = false;
+
+        updateCountdown();
+
+        timer =
+            setInterval(
+                updateCountdown,
+                1000
+            );
+
+    } catch (error) {
+
+        console.error(error);
+
+        message.textContent =
+            "SERVER OFFLINE — PLEASE TRY AGAIN";
+
+        keyBox.textContent =
+            "UNAVAILABLE";
+
+        copyButton.disabled = true;
+
+    }
+
+}
+
+
+copyButton.addEventListener(
+    "click",
+    async () => {
+
+        if (!generatedKey) {
+            return;
+        }
+
+        try {
+
+            await navigator.clipboard.writeText(
+                generatedKey
+            );
+
+            copyStatus.textContent =
+                "CODE COPIED";
+
+        } catch (error) {
+
+            const area =
+                document.createElement("textarea");
+
+            area.value = generatedKey;
+
+            document.body.appendChild(area);
+
+            area.select();
+
+            document.execCommand("copy");
+
+            area.remove();
+
+            copyStatus.textContent =
+                "CODE COPIED";
+        }
+
+        setTimeout(
+            () => {
+                copyStatus.textContent = "";
+            },
+            2000
+        );
+
+    }
+);
+
+
+copyButton.disabled = true;
+
+generateKey();
+
+</script>
+
+</body>
+</html>
