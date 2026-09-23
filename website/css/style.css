@@ -1,0 +1,686 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    padding: 25px 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background:
+        radial-gradient(
+            circle at 15% 10%,
+            rgba(157,44,255,.16),
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at 90% 90%,
+            rgba(93,24,170,.13),
+            transparent 30%
+        ),
+        #050505;
+
+    color: #fff;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+
+    background:
+        linear-gradient(
+            rgba(255,255,255,.018) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,.018) 1px,
+            transparent 1px
+        );
+
+    background-size: 35px 35px;
+
+    mask-image:
+        linear-gradient(
+            to bottom,
+            black,
+            transparent
+        );
+
+    pointer-events: none;
+}
+
+
+.wrap {
+    width: 100%;
+    max-width: 520px;
+    position: relative;
+    z-index: 1;
+}
+
+
+.header {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+
+.logo {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    line-height: 1;
+}
+
+
+.logo span {
+    color: #9d2cff;
+}
+
+
+.sub {
+    margin-top: 9px;
+    color: #707070;
+    font-size: 11px;
+    letter-spacing: 3px;
+    font-weight: 700;
+}
+
+
+.hero-card {
+    position: relative;
+
+    padding: 28px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(19,19,19,.98),
+            rgba(8,8,8,.98)
+        );
+
+    border: 1px solid #292929;
+
+    border-radius: 22px;
+
+    box-shadow:
+        0 20px 70px rgba(0,0,0,.55),
+        0 0 45px rgba(157,44,255,.09);
+
+    overflow: hidden;
+}
+
+
+.hero-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 190px;
+    height: 190px;
+
+    top: -100px;
+    right: -80px;
+
+    background: #9d2cff;
+
+    opacity: .12;
+
+    filter: blur(65px);
+
+    pointer-events: none;
+}
+
+
+.hero-glow {
+    position: absolute;
+
+    width: 180px;
+    height: 180px;
+
+    left: -100px;
+    bottom: -100px;
+
+    background: #9d2cff;
+
+    opacity: .08;
+
+    filter: blur(65px);
+}
+
+
+.badge {
+    position: relative;
+
+    display: table;
+
+    margin: 0 auto 16px;
+
+    padding: 7px 12px;
+
+    border-radius: 30px;
+
+    border: 1px solid #3b204e;
+
+    background: #120c17;
+
+    color: #b96aff;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    letter-spacing: 2px;
+}
+
+
+.hero-card h1 {
+    position: relative;
+
+    margin: 0;
+
+    text-align: center;
+
+    font-size: 25px;
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+
+.hero-card > p {
+    position: relative;
+
+    margin: 12px auto 24px;
+
+    max-width: 390px;
+
+    text-align: center;
+
+    color: #777;
+
+    font-size: 13px;
+
+    line-height: 1.7;
+}
+
+
+.mainbtn {
+    position: relative;
+
+    display: block;
+
+    width: 100%;
+
+    margin-top: 12px;
+
+    padding: 15px 16px;
+
+    border-radius: 11px;
+
+    text-align: center;
+    text-decoration: none;
+
+    border: 1px solid transparent;
+
+    font-size: 13px;
+    font-weight: 900;
+
+    letter-spacing: .7px;
+
+    cursor: pointer;
+
+    transition:
+        transform .15s,
+        box-shadow .15s,
+        background .15s;
+}
+
+
+.mainbtn:hover {
+    transform: translateY(-1px);
+}
+
+
+.mainbtn.primary {
+    color: #fff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #9d2cff,
+            #7220b8
+        );
+
+    box-shadow:
+        0 10px 25px rgba(157,44,255,.18);
+}
+
+
+.mainbtn.primary:hover {
+    box-shadow:
+        0 13px 32px rgba(157,44,255,.27);
+}
+
+
+.mainbtn.secondary {
+    background: #101010;
+
+    border-color: #292929;
+
+    color: #ddd;
+}
+
+
+.mainbtn.secondary:hover {
+    background: #171717;
+}
+
+
+.mainbtn:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+
+.divider {
+    height: 1px;
+
+    margin: 24px 0;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            #292929,
+            transparent
+        );
+}
+
+
+.info-row {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3,1fr);
+
+    gap: 8px;
+}
+
+
+.info-row div {
+    padding: 12px 5px;
+
+    text-align: center;
+
+    background: #0b0b0b;
+
+    border: 1px solid #202020;
+
+    border-radius: 10px;
+}
+
+
+.info-row strong {
+    display: block;
+
+    color: #a849ff;
+
+    font-size: 15px;
+}
+
+
+.info-row span {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #555;
+
+    font-size: 8px;
+
+    letter-spacing: 1px;
+
+    font-weight: 800;
+}
+
+
+.task {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    min-height: 72px;
+
+    margin: 10px 0;
+
+    padding: 11px;
+
+    background: #0a0a0a;
+
+    border: 1px solid #252525;
+
+    border-radius: 13px;
+
+    transition:
+        border-color .2s,
+        transform .2s;
+}
+
+
+.task:hover {
+    border-color: #5b267d;
+    transform: translateY(-1px);
+}
+
+
+.icon {
+    width: 43px;
+    height: 43px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #171717,
+            #0c0c0c
+        );
+
+    border: 1px solid #303030;
+
+    color: #fff;
+
+    font-size: 11px;
+
+    font-weight: 900;
+}
+
+
+.info {
+    flex: 1;
+    min-width: 0;
+}
+
+
+.name {
+    color: #eee;
+
+    font-size: 14px;
+
+    font-weight: 900;
+}
+
+
+.desc {
+    margin-top: 4px;
+
+    color: #666;
+
+    font-size: 10px;
+}
+
+
+.action {
+    flex-shrink: 0;
+}
+
+
+.btn {
+    padding: 9px 13px;
+
+    border: 0;
+
+    border-radius: 8px;
+
+    background: #9d2cff;
+
+    color: #fff;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+
+.btn:hover {
+    background: #b14cff;
+}
+
+
+.btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+
+.done {
+    color: #a849ff;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+
+.task-status {
+    margin-top: 16px;
+
+    text-align: center;
+
+    color: #555;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    letter-spacing: 1px;
+}
+
+
+.task-status.success {
+    color: #a849ff;
+}
+
+
+.key-box {
+    margin: 22px 0 12px;
+
+    padding: 20px 12px;
+
+    text-align: center;
+
+    word-break: break-all;
+
+    border-radius: 13px;
+
+    border: 1px solid #8e2bd0;
+
+    background:
+        linear-gradient(
+            145deg,
+            #100b14,
+            #080808
+        );
+
+    color: #bd72ff;
+
+    font-size: 23px;
+
+    font-weight: 900;
+
+    letter-spacing: 1.5px;
+
+    box-shadow:
+        inset 0 0 25px rgba(157,44,255,.05),
+        0 0 25px rgba(157,44,255,.08);
+}
+
+
+.copy-status {
+    min-height: 17px;
+
+    margin-top: 8px;
+
+    text-align: center;
+
+    color: #a849ff;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+
+.expiry-card,
+.countdown {
+    margin-top: 12px;
+
+    padding: 15px;
+
+    text-align: center;
+
+    border-radius: 12px;
+
+    background: #0b0b0b;
+
+    border: 1px solid #222;
+}
+
+
+.expiry-card span,
+.countdown span {
+    display: block;
+
+    color: #555;
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    letter-spacing: 1.5px;
+}
+
+
+.expiry-card strong {
+    display: block;
+
+    margin-top: 7px;
+
+    color: #aaa;
+
+    font-size: 13px;
+}
+
+
+.countdown strong {
+    display: block;
+
+    margin-top: 7px;
+
+    color: #b85cff;
+
+    font-size: 22px;
+
+    letter-spacing: 2px;
+}
+
+
+.countdown strong.expired {
+    color: #ff4d64;
+}
+
+
+.note {
+    margin-top: 17px;
+
+    text-align: center;
+
+    color: #4f4f4f;
+
+    font-size: 10px;
+
+    line-height: 1.6;
+}
+
+
+footer {
+    margin-top: 18px;
+
+    text-align: center;
+
+    color: #383838;
+
+    font-size: 9px;
+
+    font-weight: 800;
+
+    letter-spacing: 2px;
+}
+
+
+@media(max-width:430px) {
+
+    body {
+        padding:
+            18px 12px;
+    }
+
+    .wrap {
+        margin-top: 10px;
+    }
+
+    .hero-card {
+        padding: 19px;
+        border-radius: 18px;
+    }
+
+    .logo {
+        font-size: 30px;
+    }
+
+    .hero-card h1 {
+        font-size: 22px;
+    }
+
+    .task {
+        min-height: 68px;
+    }
+
+    .key-box {
+        font-size: 19px;
+    }
+
+}
