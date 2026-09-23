@@ -3,6 +3,8 @@
 "use strict";
 
 let API_BASE = "";
+let busy = false;
+let currentTaskIndex = -1;
 
 const TASK_LINKS = {
     youtube: "https://www.youtube.com/@RGBXCHEAT",
@@ -33,8 +35,6 @@ const TASKS = [
 
 const completed = new Set();
 
-let busy = false;
-
 const taskList = document.getElementById("taskList");
 const getKeyButton = document.getElementById("getKey");
 const taskStatus = document.getElementById("taskStatus");
@@ -56,7 +56,7 @@ function renderTasks() {
 
     taskList.innerHTML = "";
 
-    TASKS.forEach(function (task) {
+    TASKS.forEach(function (task, index) {
 
         const row = document.createElement("div");
         row.className = "task";
@@ -90,7 +90,24 @@ function renderTasks() {
 
             action.appendChild(done);
 
-        } else {
+        } else if (
+            busy &&
+            index === currentTaskIndex
+        ) {
+
+            const button = document.createElement("button");
+
+            button.className = "btn";
+            button.type = "button";
+            button.disabled = true;
+            button.textContent = "WAIT 5s";
+
+            action.appendChild(button);
+
+        } else if (
+            index === currentTaskIndex + 1 &&
+            !busy
+        ) {
 
             const button = document.createElement("button");
 
@@ -99,8 +116,19 @@ function renderTasks() {
             button.textContent = "OPEN";
 
             button.addEventListener("click", function () {
-                startTask(task, button);
+                startTask(index);
             });
+
+            action.appendChild(button);
+
+        } else {
+
+            const button = document.createElement("button");
+
+            button.className = "btn";
+            button.type = "button";
+            button.disabled = true;
+            button.textContent = "LOCKED";
 
             action.appendChild(button);
         }
@@ -127,38 +155,107 @@ function renderTasks() {
             true
         );
 
-    } else {
+    } else if (!busy) {
 
-        setStatus(
-            completed.size +
-            " / " +
-            TASKS.length +
-            " TASKS COMPLETED",
-            false
-        );
+        const nextIndex = currentTaskIndex + 1;
+
+        if (TASKS[nextIndex]) {
+
+            setStatus(
+                "NEXT TASK: " +
+                TASKS[nextIndex].name,
+                false
+            );
+
+        } else {
+
+            setStatus(
+                completed.size +
+                " / " +
+                TASKS.length +
+                " TASKS COMPLETED",
+                false
+            );
+        }
     }
 }
 
 
-async function startTask(task, button) {
+function wait(seconds) {
 
-    if (busy || completed.has(task.id)) {
+    return new Promise(function (resolve) {
+
+        setTimeout(resolve, seconds * 1000);
+
+    });
+}
+
+
+async function verifyTask(task) {
+
+    const response = await fetch(
+        API_BASE + "/api/tasks/complete",
+        {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                task: task.id
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+
+        throw new Error(
+            data.error || "TASK_ERROR"
+        );
+    }
+
+    return data;
+}
+
+
+async function startTask(index) {
+
+    if (busy) {
+        return;
+    }
+
+    if (index !== currentTaskIndex + 1) {
+        return;
+    }
+
+    const task = TASKS[index];
+
+    if (!task || completed.has(task.id)) {
         return;
     }
 
     const url = TASK_LINKS[task.id];
 
     if (!url) {
-        setStatus("TASK LINK NOT CONFIGURED", false);
+
+        setStatus(
+            "TASK LINK NOT CONFIGURED",
+            false
+        );
+
         return;
     }
 
     busy = true;
+    currentTaskIndex = index;
 
-    button.disabled = true;
+    renderTasks();
+
 
     /*
-     * Open the requested task.
+     * Open current task.
      */
     window.open(
         url,
@@ -168,57 +265,35 @@ async function startTask(task, button) {
 
 
     /*
-     * Five-second verification timer.
+     * Wait exactly 5 seconds.
      */
-    for (let seconds = 5; seconds > 0; seconds--) {
-
-        button.textContent =
-            "WAIT " + seconds + "s";
+    for (let seconds = 5; seconds >= 1; seconds--) {
 
         setStatus(
-            "Complete " +
             task.name +
-            " — waiting " +
+            " OPENED — NEXT TASK IN " +
             seconds +
-            " seconds...",
+            "s",
             false
         );
 
-        await new Promise(function (resolve) {
-            setTimeout(resolve, 1000);
-        });
+        await wait(1);
     }
 
 
-    button.textContent = "VERIFYING...";
-
+    /*
+     * Verify current task with server.
+     */
     try {
 
-        const response = await fetch(
-            API_BASE + "/api/tasks/complete",
-            {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    task: task.id
-                })
-            }
+        setStatus(
+            "VERIFYING " +
+            task.name +
+            "...",
+            false
         );
 
-
-        const data = await response.json();
-
-
-        if (!response.ok || !data.success) {
-
-            throw new Error(
-                data.error || "TASK_ERROR"
-            );
-        }
-
+        await verifyTask(task);
 
         completed.add(task.id);
 
@@ -227,6 +302,10 @@ async function startTask(task, button) {
         renderTasks();
 
 
+        /*
+         * If this was the final task,
+         * enable GET CODE.
+         */
         if (completed.size === TASKS.length) {
 
             setStatus(
@@ -234,22 +313,31 @@ async function startTask(task, button) {
                 true
             );
 
-        } else {
-
-            const next =
-                TASKS.find(function (item) {
-                    return !completed.has(item.id);
-                });
-
-            if (next) {
-
-                setStatus(
-                    "TASK COMPLETED — NEXT: " +
-                    next.name,
-                    true
-                );
-            }
+            return;
         }
+
+
+        /*
+         * Automatically open the next task.
+         */
+        const nextIndex = index + 1;
+        const nextTask = TASKS[nextIndex];
+
+        if (nextTask) {
+
+            setStatus(
+                task.name +
+                " COMPLETED — OPENING " +
+                nextTask.name +
+                "...",
+                true
+            );
+
+            await wait(1);
+
+            startTask(nextIndex);
+        }
+
 
     } catch (error) {
 
@@ -260,8 +348,7 @@ async function startTask(task, button) {
 
         busy = false;
 
-        button.disabled = false;
-        button.textContent = "OPEN";
+        renderTasks();
 
         setStatus(
             "VERIFICATION FAILED — PLEASE TRY AGAIN",
@@ -284,7 +371,6 @@ async function startTaskSession() {
     const data =
         await response.json();
 
-
     if (!response.ok || !data.success) {
 
         throw new Error(
@@ -304,7 +390,6 @@ async function loadServer() {
             false
         );
 
-
         const response = await fetch(
             "current_tunnel.json?ts=" +
             Date.now(),
@@ -313,7 +398,6 @@ async function loadServer() {
             }
         );
 
-
         if (!response.ok) {
 
             throw new Error(
@@ -321,10 +405,8 @@ async function loadServer() {
             );
         }
 
-
         const config =
             await response.json();
-
 
         if (!config.base_url) {
 
@@ -333,25 +415,22 @@ async function loadServer() {
             );
         }
 
-
         API_BASE =
             config.base_url.replace(
                 /\/+$/,
                 ""
             );
 
-
         await startTaskSession();
 
+        currentTaskIndex = -1;
 
         renderTasks();
 
-
         setStatus(
-            "0 / 3 TASKS COMPLETED",
+            "NEXT TASK: YouTube",
             false
         );
-
 
     } catch (error) {
 
@@ -360,9 +439,7 @@ async function loadServer() {
             error
         );
 
-
         getKeyButton.disabled = true;
-
 
         setStatus(
             "SERVER CONNECTION FAILED — PLEASE REFRESH",
@@ -383,14 +460,12 @@ getKeyButton.addEventListener(
             return;
         }
 
-
         getKeyButton.disabled = true;
 
         setStatus(
             "VERIFYING ALL TASKS...",
             false
         );
-
 
         try {
 
@@ -402,10 +477,8 @@ getKeyButton.addEventListener(
                 }
             );
 
-
             const data =
                 await response.json();
-
 
             if (
                 !response.ok ||
@@ -417,7 +490,6 @@ getKeyButton.addEventListener(
                     "STATUS_ERROR"
                 );
             }
-
 
             if (
                 data.tasks &&
@@ -436,7 +508,6 @@ getKeyButton.addEventListener(
                 );
             }
 
-
         } catch (error) {
 
             console.error(
@@ -444,9 +515,7 @@ getKeyButton.addEventListener(
                 error
             );
 
-
             getKeyButton.disabled = false;
-
 
             setStatus(
                 "SERVER VERIFICATION FAILED — PLEASE TRY AGAIN",
