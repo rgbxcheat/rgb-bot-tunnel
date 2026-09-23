@@ -1,3 +1,7 @@
+(function () {
+
+"use strict";
+
 let API_BASE = "";
 
 const TASK_LINKS = {
@@ -6,7 +10,7 @@ const TASK_LINKS = {
     telegram: "https://t.me/rgbxcheat"
 };
 
-const tasks = [
+const TASKS = [
     {
         id: "youtube",
         name: "YouTube",
@@ -29,14 +33,31 @@ const tasks = [
 
 const completed = new Set();
 
-const list = document.getElementById("taskList");
-const getKey = document.getElementById("getKey");
+let busy = false;
+
+const taskList = document.getElementById("taskList");
+const getKeyButton = document.getElementById("getKey");
 const taskStatus = document.getElementById("taskStatus");
 
-function render() {
-    list.innerHTML = "";
 
-    tasks.forEach(task => {
+function setStatus(text, success) {
+
+    taskStatus.textContent = text;
+
+    if (success) {
+        taskStatus.classList.add("success");
+    } else {
+        taskStatus.classList.remove("success");
+    }
+}
+
+
+function renderTasks() {
+
+    taskList.innerHTML = "";
+
+    TASKS.forEach(function (task) {
+
         const row = document.createElement("div");
         row.className = "task";
 
@@ -62,16 +83,22 @@ function render() {
         action.className = "action";
 
         if (completed.has(task.id)) {
+
             const done = document.createElement("span");
             done.className = "done";
             done.textContent = "DONE";
+
             action.appendChild(done);
+
         } else {
+
             const button = document.createElement("button");
+
             button.className = "btn";
+            button.type = "button";
             button.textContent = "OPEN";
 
-            button.addEventListener("click", () => {
+            button.addEventListener("click", function () {
                 startTask(task, button);
             });
 
@@ -82,54 +109,91 @@ function render() {
         row.appendChild(info);
         row.appendChild(action);
 
-        list.appendChild(row);
+        taskList.appendChild(row);
     });
 
-    const allDone = completed.size === tasks.length;
 
-    getKey.disabled = !allDone;
+    const allCompleted =
+        completed.size === TASKS.length;
 
-    if (allDone) {
-        taskStatus.textContent =
-            "ALL TASKS COMPLETED — GET YOUR CODE";
-        taskStatus.classList.add("success");
+    getKeyButton.disabled =
+        !allCompleted || busy;
+
+
+    if (allCompleted) {
+
+        setStatus(
+            "ALL TASKS COMPLETED — GET YOUR CODE",
+            true
+        );
+
     } else {
-        taskStatus.textContent =
-            completed.size + " / " + tasks.length + " TASKS COMPLETED";
-        taskStatus.classList.remove("success");
+
+        setStatus(
+            completed.size +
+            " / " +
+            TASKS.length +
+            " TASKS COMPLETED",
+            false
+        );
     }
 }
 
-async function startTask(task, button) {
-    const url = TASK_LINKS[task.id];
 
-    if (!url) {
-        taskStatus.textContent = "TASK LINK NOT CONFIGURED";
+async function startTask(task, button) {
+
+    if (busy || completed.has(task.id)) {
         return;
     }
 
-    window.open(url, "_blank", "noopener,noreferrer");
+    const url = TASK_LINKS[task.id];
+
+    if (!url) {
+        setStatus("TASK LINK NOT CONFIGURED", false);
+        return;
+    }
+
+    busy = true;
 
     button.disabled = true;
 
-    let remaining = 5;
-    button.textContent = "WAIT " + remaining + "s";
+    /*
+     * Open the requested task.
+     */
+    window.open(
+        url,
+        "_blank",
+        "noopener,noreferrer"
+    );
 
-    const timer = setInterval(() => {
-        remaining--;
 
-        if (remaining > 0) {
-            button.textContent = "WAIT " + remaining + "s";
-        }
-    }, 1000);
+    /*
+     * Five-second verification timer.
+     */
+    for (let seconds = 5; seconds > 0; seconds--) {
 
-    await new Promise(resolve => {
-        setTimeout(resolve, 5000);
-    });
+        button.textContent =
+            "WAIT " + seconds + "s";
 
-    clearInterval(timer);
+        setStatus(
+            "Complete " +
+            task.name +
+            " — waiting " +
+            seconds +
+            " seconds...",
+            false
+        );
+
+        await new Promise(function (resolve) {
+            setTimeout(resolve, 1000);
+        });
+    }
+
+
+    button.textContent = "VERIFYING...";
 
     try {
+
         const response = await fetch(
             API_BASE + "/api/tasks/complete",
             {
@@ -144,124 +208,260 @@ async function startTask(task, button) {
             }
         );
 
+
         const data = await response.json();
 
+
         if (!response.ok || !data.success) {
-            throw new Error(data.error || "TASK_ERROR");
+
+            throw new Error(
+                data.error || "TASK_ERROR"
+            );
         }
 
+
         completed.add(task.id);
-        render();
+
+        busy = false;
+
+        renderTasks();
+
+
+        if (completed.size === TASKS.length) {
+
+            setStatus(
+                "ALL TASKS COMPLETED — GET YOUR CODE",
+                true
+            );
+
+        } else {
+
+            const next =
+                TASKS.find(function (item) {
+                    return !completed.has(item.id);
+                });
+
+            if (next) {
+
+                setStatus(
+                    "TASK COMPLETED — NEXT: " +
+                    next.name,
+                    true
+                );
+            }
+        }
 
     } catch (error) {
-        console.error(error);
+
+        console.error(
+            "TASK ERROR:",
+            error
+        );
+
+        busy = false;
 
         button.disabled = false;
         button.textContent = "OPEN";
 
-        taskStatus.textContent =
-            "VERIFICATION FAILED — PLEASE TRY AGAIN";
+        setStatus(
+            "VERIFICATION FAILED — PLEASE TRY AGAIN",
+            false
+        );
     }
 }
 
-getKey.addEventListener("click", async () => {
-    if (completed.size !== tasks.length) {
-        return;
-    }
-
-    try {
-        const response = await fetch(
-            API_BASE + "/api/tasks/status",
-            {
-                credentials: "include"
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(data.error || "SESSION_ERROR");
-        }
-
-        if (
-            data.tasks &&
-            data.tasks.youtube &&
-            data.tasks.whatsapp &&
-            data.tasks.telegram
-        ) {
-            window.location.href = "get-key.html";
-        } else {
-            throw new Error("TASKS_NOT_COMPLETED");
-        }
-
-    } catch (error) {
-        console.error(error);
-
-        taskStatus.textContent =
-            "SERVER VERIFICATION FAILED — PLEASE TRY AGAIN";
-    }
-});
 
 async function startTaskSession() {
-    try {
-        const response = await fetch(
-            API_BASE + "/api/tasks/start",
-            {
-                method: "POST",
-                credentials: "include"
-            }
-        );
 
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(data.error || "SESSION_START_FAILED");
+    const response = await fetch(
+        API_BASE + "/api/tasks/start",
+        {
+            method: "POST",
+            credentials: "include"
         }
+    );
 
-        console.log("RGB task session started");
+    const data =
+        await response.json();
 
-    } catch (error) {
-        console.error(error);
 
-        taskStatus.textContent =
-            "SERVER CONNECTION FAILED — PLEASE REFRESH";
+    if (!response.ok || !data.success) {
+
+        throw new Error(
+            data.error ||
+            "SESSION_START_FAILED"
+        );
     }
 }
 
-async function loadApiBase() {
+
+async function loadServer() {
+
     try {
+
+        setStatus(
+            "CONNECTING TO RGB BOT V1 SERVER...",
+            false
+        );
+
+
         const response = await fetch(
-            "current_tunnel.json?ts=" + Date.now(),
+            "current_tunnel.json?ts=" +
+            Date.now(),
             {
                 cache: "no-store"
             }
         );
 
+
         if (!response.ok) {
-            throw new Error("REGISTRY_ERROR");
+
+            throw new Error(
+                "CURRENT_TUNNEL_NOT_FOUND"
+            );
         }
 
-        const config = await response.json();
+
+        const config =
+            await response.json();
+
 
         if (!config.base_url) {
-            throw new Error("NO_TUNNEL_URL");
+
+            throw new Error(
+                "SERVER_URL_NOT_FOUND"
+            );
         }
 
-        API_BASE = config.base_url.replace(/\/+$/, "");
 
-        render();
+        API_BASE =
+            config.base_url.replace(
+                /\/+$/,
+                ""
+            );
+
 
         await startTaskSession();
 
+
+        renderTasks();
+
+
+        setStatus(
+            "0 / 3 TASKS COMPLETED",
+            false
+        );
+
+
     } catch (error) {
-        console.error(error);
 
-        taskStatus.textContent =
-            "SERVER CONNECTION FAILED — PLEASE TRY AGAIN";
+        console.error(
+            "SERVER INIT ERROR:",
+            error
+        );
 
-        getKey.disabled = true;
+
+        getKeyButton.disabled = true;
+
+
+        setStatus(
+            "SERVER CONNECTION FAILED — PLEASE REFRESH",
+            false
+        );
     }
 }
 
-render();
-loadApiBase();
+
+getKeyButton.addEventListener(
+    "click",
+    async function () {
+
+        if (
+            busy ||
+            completed.size !== TASKS.length
+        ) {
+            return;
+        }
+
+
+        getKeyButton.disabled = true;
+
+        setStatus(
+            "VERIFYING ALL TASKS...",
+            false
+        );
+
+
+        try {
+
+            const response = await fetch(
+                API_BASE + "/api/tasks/status",
+                {
+                    credentials: "include",
+                    cache: "no-store"
+                }
+            );
+
+
+            const data =
+                await response.json();
+
+
+            if (
+                !response.ok ||
+                !data.success
+            ) {
+
+                throw new Error(
+                    data.error ||
+                    "STATUS_ERROR"
+                );
+            }
+
+
+            if (
+                data.tasks &&
+                data.tasks.youtube &&
+                data.tasks.whatsapp &&
+                data.tasks.telegram
+            ) {
+
+                window.location.href =
+                    "get-key.html";
+
+            } else {
+
+                throw new Error(
+                    "TASKS_NOT_COMPLETED"
+                );
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "GET KEY ERROR:",
+                error
+            );
+
+
+            getKeyButton.disabled = false;
+
+
+            setStatus(
+                "SERVER VERIFICATION FAILED — PLEASE TRY AGAIN",
+                false
+            );
+        }
+    }
+);
+
+
+/*
+ * Initial page.
+ */
+renderTasks();
+
+loadServer();
+
+})();
