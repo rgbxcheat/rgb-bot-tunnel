@@ -64,8 +64,28 @@
 
 <script>
 
-const API_BASE = "https://affordable-objective-journey-hiking.trycloudflare.com";
-const API_URL = API_BASE + "/api/get-key";
+let API_BASE = "";
+let API_URL = "";
+
+async function loadApiBase() {
+    const response = await fetch(
+        "current_tunnel.json?ts=" + Date.now(),
+        { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+        throw new Error("REGISTRY_ERROR");
+    }
+
+    const config = await response.json();
+
+    if (!config.base_url) {
+        throw new Error("NO_TUNNEL_URL");
+    }
+
+    API_BASE = config.base_url.replace(/\/+$/, "");
+    API_URL = API_BASE + "/api/get-key";
+}
 
 const message =
     document.getElementById("message");
@@ -153,6 +173,8 @@ function updateCountdown() {
 async function generateKey() {
 
     try {
+
+        await loadApiBase();
 
         message.textContent =
             "Connecting to RGB BOT V1 server...";
