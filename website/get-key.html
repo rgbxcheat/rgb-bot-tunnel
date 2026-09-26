@@ -84,19 +84,29 @@ return "rgb-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
 }
 
 async function loadKey(){
+const CURRENT_TUNNEL="https://janet-rows-pixels-pentium.trycloudflare.com";
+
+try{
+let baseUrl=CURRENT_TUNNEL;
+
 try{
 const registry=await fetch("current_tunnel.json?ts="+Date.now(),{
 cache:"no-store"
 });
 
-if(!registry.ok) throw new Error("REGISTRY");
-
+if(registry.ok){
 const config=await registry.json();
-const baseUrl=String(config.base_url||"").replace(/\/+$/,"");
+const registryUrl=String(config.base_url||"").replace(/\/+$/,"");
 
-if(!baseUrl) throw new Error("NO_TUNNEL");
+if(registryUrl){
+baseUrl=registryUrl;
+}
+}
+}catch(_){
+baseUrl=CURRENT_TUNNEL;
+}
 
-const response=await fetch(baseUrl+"/api/get-key",{
+const response=await fetch(baseUrl+"/api/get-key?ts="+Date.now(),{
 method:"POST",
 mode:"cors",
 cache:"no-store",
@@ -115,23 +125,31 @@ throw new Error(data.error||"KEY_FAILED");
 generatedKey=String(data.key);
 expiresAt=new Date(data.expires_at).getTime();
 
-if(!Number.isFinite(expiresAt)) throw new Error("EXPIRY");
+if(!Number.isFinite(expiresAt)){
+throw new Error("EXPIRY");
+}
 
 keyEl.textContent=generatedKey;
 statusEl.textContent="CODE READY";
 copyBtn.disabled=false;
 
 updateCountdown();
+
+if(timer){
+clearInterval(timer);
+}
+
 timer=setInterval(updateCountdown,1000);
 
 }catch(error){
-console.error("GET KEY ERROR",error);
+console.error("GET KEY ERROR:",error);
+
 keyEl.textContent="UNAVAILABLE";
 statusEl.textContent="SERVER OFFLINE";
+countdownEl.textContent="--:--:--";
 copyBtn.disabled=true;
 }
 }
-
 function updateCountdown(){
 const remaining=expiresAt-Date.now();
 
