@@ -84,13 +84,13 @@ return "rgb-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
 }
 
 async function loadKey(){
-const CURRENT_TUNNEL="https://languages-richmond-adds-computing.trycloudflare.com";
+const CURRENT_TUNNEL="https://raising-dodge-consequently-palm.trycloudflare.com";
 
 try{
 let baseUrl=CURRENT_TUNNEL;
 
 try{
-const registry=await fetch("current_tunnel.json?ts="+Date.now(),{
+const registry=await fetch("https://raw.githubusercontent.com/rgbxcheat/rgb-bot-tunnel/main/website/current_tunnel.json?ts="+Date.now(),{
 cache:"no-store"
 });
 
