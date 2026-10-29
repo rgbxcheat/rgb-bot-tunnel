@@ -50,7 +50,7 @@ ADMIN_PASSWORD = "RGB217642055"
 
 ADMIN_TEMPLATE = Path(__file__).resolve().parent / "admin.html"
 
-SWITCH_FILES_DIR = Path(__file__).resolve().parent / "protected" / "files"
+SWITCH_FILES_DIR = Path(__file__).resolve().parent / "protected" / "files" / "RGB"
 ON_DIR = SWITCH_FILES_DIR / "on"
 OFF_DIR = SWITCH_FILES_DIR / "off"
 
@@ -964,7 +964,7 @@ def verify_key():
         "session_token": session_token
     })
 
-SWITCH_FILES_DIR = Path(__file__).resolve().parent / "protected" / "files"
+SWITCH_FILES_DIR = Path(__file__).resolve().parent / "protected" / "files" / "RGB"
 
 
 def authenticate_switch_key():
