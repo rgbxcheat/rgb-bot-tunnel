@@ -37,6 +37,10 @@
             GET KEY
         </a>
 
+        <a class="mainbtn secondary" href="#" onclick="openAdmin();return false;">
+            ADMIN PANEL
+        </a>
+
         <div class="divider"></div>
 
         <div class="info-row">
@@ -64,5 +68,27 @@
 
 </main>
 
+<script>
+async function openAdmin(){
+    try {
+        const response = await fetch(
+            "current_tunnel.json?ts=" + Date.now(),
+            {cache:"no-store"}
+        );
+        if (!response.ok) throw new Error("SERVER ADDRESS UNAVAILABLE");
+
+        const config = await response.json();
+        const base = String(config.base_url || config.url || "").replace(/\\/+$/, "");
+
+        if (!/^https:\\/\\//i.test(base)) {
+            throw new Error("INVALID SERVER ADDRESS");
+        }
+
+        window.location.href = base + "/admin/login";
+    } catch (error) {
+        alert("ADMIN CONNECTION ERROR: " + error.message);
+    }
+}
+</script>
 </body>
 </html>

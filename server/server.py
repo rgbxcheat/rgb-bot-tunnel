@@ -46,7 +46,7 @@ def get_client_ip():
     return request.remote_addr or ""
 
 
-ADMIN_PASSWORD = "RGB217642055"
+ADMIN_PASSWORD = "159753"
 
 ADMIN_TEMPLATE = Path(__file__).resolve().parent / "admin.html"
 
@@ -74,14 +74,14 @@ def admin_required(func):
 def admin_file_info(directory):
 
     result = []
+    if not directory.exists():
+        return result
 
-    for item in sorted(directory.iterdir()):
-
-        if not item.is_file():
+    for item in sorted(directory.rglob("*")):
+        if item.is_symlink() or not item.is_file():
             continue
 
         data = item.read_bytes()
-
         result.append({
             "name": item.name,
             "path": str(item.relative_to(directory)).replace("\\", "/"),
@@ -90,6 +90,51 @@ def admin_file_info(directory):
         })
 
     return result
+
+
+def admin_dir_info(directory):
+
+    result = []
+    if not directory.exists():
+        return result
+
+    for item in sorted(directory.rglob("*")):
+        if item.is_symlink() or not item.is_dir():
+            continue
+        result.append(str(item.relative_to(directory)).replace("\\", "/"))
+
+    return result
+
+
+def admin_safe_target(mode, raw_path):
+
+    directories = {"on": ON_DIR, "off": OFF_DIR}
+    if mode not in directories:
+        return None, None, "INVALID_MODE"
+
+    raw_path = str(raw_path or "").strip().replace("\\", "/")
+    if not raw_path or raw_path.startswith("/") or ":" in raw_path:
+        return None, None, "INVALID_PATH"
+
+    parts = [p for p in raw_path.split("/") if p not in ("", ".")]
+    if not parts or any(p == ".." for p in parts):
+        return None, None, "INVALID_PATH"
+
+    base = directories[mode].resolve()
+    target = directories[mode].joinpath(*parts)
+
+    # Reject symlinks anywhere in the requested path.
+    current = directories[mode]
+    for part in parts:
+        current = current / part
+        if current.is_symlink():
+            return None, None, "SYMLINK_NOT_ALLOWED"
+
+    resolved = target.resolve()
+    if resolved == base or base not in resolved.parents:
+        return None, None, "INVALID_PATH"
+
+    return target, base, None
 
 
 
@@ -1114,10 +1159,13 @@ def admin_login():
 
         error = "INVALID PASSWORD"
 
-    return send_from_directory(
+    response = send_from_directory(
         Path(__file__).resolve().parent,
         "admin.html"
     )
+    if request.method == "POST":
+        response.status_code = 401
+    return response
 
 
 @app.get("/api/admin/config")
@@ -1210,8 +1258,8 @@ def admin_files():
         "success": True,
         "on": admin_file_info(ON_DIR),
         "off": admin_file_info(OFF_DIR),
-        "security": admin_file_info(SECURITY_DIR),
-        "fix_error": admin_file_info(FIX_ERROR_DIR)
+        "on_dirs": admin_dir_info(ON_DIR),
+        "off_dirs": admin_dir_info(OFF_DIR)
     })
 
 
@@ -1223,9 +1271,7 @@ def admin_upload():
 
     directories = {
         "on": ON_DIR,
-        "off": OFF_DIR,
-        "security": SECURITY_DIR,
-        "fix_error": FIX_ERROR_DIR
+        "off": OFF_DIR
     }
 
     if mode not in directories:
@@ -1472,48 +1518,57 @@ def admin_upload_folder():
         "files": results
     })
 
+@app.post("/api/admin/folder")
+@admin_required
+def admin_create_folder():
+
+    mode = str(request.form.get("mode", "")).lower()
+    target, base, error = admin_safe_target(mode, request.form.get("path", ""))
+
+    if error:
+        return jsonify({"success": False, "error": error}), 400
+
+    if target.exists():
+        return jsonify({"success": False, "error": "FOLDER_ALREADY_EXISTS"}), 409
+
+    target.mkdir(parents=True, exist_ok=False)
+
+    return jsonify({
+        "success": True,
+        "mode": mode,
+        "path": str(target.relative_to(base)).replace("\\", "/")
+    })
+
+
 @app.post("/api/admin/delete")
 @admin_required
 def admin_delete():
 
     mode = str(request.form.get("mode", "")).lower()
-    filename = secure_filename(
-        str(request.form.get("filename", ""))
-    )
+    raw_path = request.form.get("path") or request.form.get("filename", "")
+    target, base, error = admin_safe_target(mode, raw_path)
 
-    directories = {
-        "on": ON_DIR,
-        "off": OFF_DIR,
-        "security": SECURITY_DIR,
-        "fix_error": FIX_ERROR_DIR
-    }
+    if error:
+        return jsonify({"success": False, "error": error}), 400
 
-    if mode not in directories:
-        return jsonify({
-            "success": False,
-            "error": "INVALID_MODE"
-        }), 400
+    if not target.exists():
+        return jsonify({"success": False, "error": "ITEM_NOT_FOUND"}), 404
 
-    if not filename:
-        return jsonify({
-            "success": False,
-            "error": "INVALID_FILENAME"
-        }), 400
-
-    target = directories[mode] / filename
-
-    if not target.exists() or not target.is_file():
-        return jsonify({
-            "success": False,
-            "error": "FILE_NOT_FOUND"
-        }), 404
-
-    target.unlink()
+    if target.is_file():
+        target.unlink()
+        item_type = "file"
+    elif target.is_dir():
+        import shutil
+        shutil.rmtree(target)
+        item_type = "folder"
+    else:
+        return jsonify({"success": False, "error": "UNSUPPORTED_ITEM"}), 400
 
     return jsonify({
         "success": True,
         "mode": mode,
-        "name": filename
+        "path": str(target.relative_to(base)).replace("\\", "/"),
+        "type": item_type
     })
 
 

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RGB BOT V1 ADMIN</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#080808;color:#eee;font-family:Arial,sans-serif;
+ min-height:100vh;padding:25px
+}
+.wrap{max-width:900px;margin:auto}
+.card{
+ background:#111;border:1px solid #292929;padding:22px;margin-bottom:18px;
+}
+h1,h2,h3{margin-top:0}
+h1{color:#9d2cff}
+label{display:block;margin:14px 0 7px;color:#aaa}
+input,textarea,select{
+ width:100%;padding:13px;background:#080808;color:#fff;
+ border:1px solid #333;font-size:15px
+}
+textarea{min-height:130px;resize:vertical}
+button{
+ padding:13px 18px;background:#9d2cff;color:white;border:0;
+ cursor:pointer;font-weight:bold;margin-top:12px
+}
+button:hover{background:#7d18d8}
+.status{
+ margin-top:12px;padding:12px;background:#090909;
+ border:1px solid #292929;white-space:pre-wrap
+}
+.hidden{display:none}
+.file-row{
+ border-top:1px solid #292929;padding:12px 0;
+ font-family:monospace;word-break:break-all
+}
+.small{color:#888;font-size:12px}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div id="login" class="card">
+<h1>RGB BOT V1</h1>
+<h3>ADMIN LOGIN</h3>
+<label>ADMIN CODE</label>
+<input id="adminCode" type="password" autocomplete="off">
+<button onclick="login()">ENTER ADMIN</button>
+<div id="loginStatus" class="status">READY</div>
+</div>
+
+<div id="panel" class="hidden">
+
+<div class="card">
+<h1>RGB BOT V1 CONTROL</h1>
+
+<label>GLOBAL APP CODE</label>
+<input id="appCode" placeholder="RGBV">
+
+<button onclick="saveAppCode()">SAVE GLOBAL CODE</button>
+
+<div id="configStatus" class="status">READY</div>
+</div>
+
+<div class="card">
+<h2>OFF FILE</h2>
+
+<label>FULL FILE PATH</label>
+<input id="offPath"
+ placeholder="Android/data/example/file">
+
+<label>SELECT FILE</label>
+<input id="offFile" type="file">
+
+<button onclick="upload('off')">UPLOAD OFF</button>
+
+<div id="offStatus" class="status">READY</div>
+<div id="offFiles" class="status">Loading...</div>
+
+<label>FOLDER PATH (INSIDE OFF)</label>
+<input id="offFolderPath" placeholder="Example: Android/data/example">
+
+<button type="button" onclick="createFolder('off')">CREATE FOLDER</button>
+<button type="button" onclick="uploadFolder('off')">UPLOAD FOLDER</button>
+<input id="offFolderInput" type="file" webkitdirectory multiple>
+<div id="offFolderStatus" class="status">READY</div>
+</div>
+
+<div class="card">
+<h2>ON FILE</h2>
+
+<label>FULL FILE PATH</label>
+<input id="onPath"
+ placeholder="Android/data/example/file">
+
+<label>SELECT FILE</label>
+<input id="onFile" type="file">
+
+<button onclick="upload('on')">UPLOAD ON</button>
+
+<div id="onStatus" class="status">READY</div>
+<div id="onFiles" class="status">Loading...</div>
+
+<label>FOLDER PATH (INSIDE ON)</label>
+<input id="onFolderPath" placeholder="Example: Android/data/example">
+
+<button type="button" onclick="createFolder('on')">CREATE FOLDER</button>
+<button type="button" onclick="uploadFolder('on')">UPLOAD FOLDER</button>
+<input id="onFolderInput" type="file" webkitdirectory multiple>
+<div id="onFolderStatus" class="status">READY</div>
+</div>
+
+<div class="card">
+<h2>SERVER / APP STATUS</h2>
+<button onclick="verify()">VERIFY EVERYTHING</button>
+<div id="verifyStatus" class="status">READY</div>
+</div>
+
+</div>
+</div>
+
+<script>
+async function req(url, options={}){
+    const r=await fetch(url,{
+        credentials:"same-origin",
+        ...options
+    });
+
+    if(r.redirected && r.url.includes("/admin/login")){
+        document.getElementById("login").classList.remove("hidden");
+        document.getElementById("panel").classList.add("hidden");
+        return null;
+    }
+
+    return r;
+}
+
+async function login(){
+    const code=document.getElementById("adminCode").value;
+    const status=document.getElementById("loginStatus");
+
+    status.textContent="CHECKING...";
+
+    const fd=new FormData();
+    fd.append("password",code);
+
+    const r=await fetch("/admin/login",{
+        method:"POST",
+        body:fd,
+        credentials:"same-origin"
+    });
+
+    if(r.redirected || r.ok){
+        document.getElementById("login").classList.add("hidden");
+        document.getElementById("panel").classList.remove("hidden");
+        status.textContent="LOGIN OK";
+        loadConfig();
+        loadFiles("on");
+        loadFiles("off");
+        verify();
+    }else{
+        status.textContent="INVALID ADMIN CODE";
+    }
+}
+
+async function loadConfig(){
+    const r=await req("/api/admin/config");
+    if(!r)return;
+
+    const d=await r.json();
+
+    if(d.success){
+        document.getElementById("appCode").value=d.config.app_code||"RGBV";
+        document.getElementById("configStatus").textContent=
+            "CURRENT GLOBAL CODE: "+(d.config.app_code||"");
+    }else{
+        document.getElementById("configStatus").textContent=d.error||"ERROR";
+    }
+}
+
+async function saveAppCode(){
+    const code=document.getElementById("appCode").value.trim();
+    const s=document.getElementById("configStatus");
+
+    if(!code){
+        s.textContent="ERROR: APP CODE REQUIRED";
+        return;
+    }
+
+    s.textContent="SAVING...";
+
+    const r=await req("/api/admin/config",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            app_code:code
+        })
+    });
+
+    if(!r)return;
+
+    const d=await r.json();
+
+    s.textContent=d.success
+        ? "GLOBAL CODE UPDATED FOR SERVER: "+code
+        : "ERROR: "+(d.error||"SAVE FAILED");
+}
+
+async function upload(mode){
+    const path=document.getElementById(mode+"Path").value.trim();
+    const input=document.getElementById(mode+"File");
+    const status=document.getElementById(mode+"Status");
+
+    if(!path){
+        status.textContent="ERROR: FULL FILE PATH REQUIRED";
+        return;
+    }
+
+    if(!input.files.length){
+        status.textContent="ERROR: SELECT A FILE";
+        return;
+    }
+
+    status.textContent="UPLOADING...";
+
+    const fd=new FormData();
+    fd.append("mode",mode);
+    fd.append("path",path);
+    fd.append("file",input.files[0]);
+
+    const r=await req("/api/admin/upload",{
+        method:"POST",
+        body:fd
+    });
+
+    if(!r)return;
+
+    const d=await r.json();
+
+    if(!d.success){
+        status.textContent="ERROR: "+(d.error||"UPLOAD FAILED");
+        return;
+    }
+
+    status.textContent=
+        "UPLOADED\nPATH: "+d.path+
+        "\nSIZE: "+d.size+
+        "\nSHA256: "+d.sha256;
+
+    input.value="";
+    await loadFiles(mode);
+}
+
+async function createFolder(mode){
+    const path=document.getElementById(mode+"FolderPath").value.trim();
+    const status=document.getElementById(mode+"FolderStatus");
+
+    if(!path){
+        status.textContent="ERROR: FOLDER PATH REQUIRED";
+        return;
+    }
+
+    status.textContent="CREATING...";
+    const fd=new FormData();
+    fd.append("mode",mode);
+    fd.append("path",path);
+
+    const r=await req("/api/admin/folder",{method:"POST",body:fd});
+    if(!r)return;
+    const d=await r.json();
+
+    status.textContent=d.success
+        ? "FOLDER CREATED: "+d.path
+        : "ERROR: "+(d.error||"CREATE FAILED");
+
+    if(d.success) await loadFiles(mode);
+}
+
+async function uploadFolder(mode){
+    const path=document.getElementById(mode+"FolderPath").value.trim();
+    const input=document.getElementById(mode+"FolderInput");
+    const status=document.getElementById(mode+"FolderStatus");
+
+    if(!path){
+        status.textContent="ERROR: DESTINATION FOLDER REQUIRED";
+        return;
+    }
+    if(!input.files.length){
+        status.textContent="ERROR: SELECT A FOLDER";
+        return;
+    }
+
+    status.textContent="UPLOADING...";
+    const fd=new FormData();
+    fd.append("mode",mode);
+    fd.append("path",path);
+
+    for(const file of input.files){
+        fd.append("files",file,file.webkitRelativePath||file.name);
+    }
+
+    const r=await req("/api/admin/upload-folder",{method:"POST",body:fd});
+    if(!r)return;
+    const d=await r.json();
+
+    if(!d.success){
+        status.textContent="ERROR: "+(d.error||"UPLOAD FAILED");
+        return;
+    }
+
+    status.textContent="UPLOADED FILES: "+(d.files||[]).length;
+    input.value="";
+    await loadFiles(mode);
+}
+
+async function deleteEntry(mode,path,type){
+    if(!confirm("DELETE "+type.toUpperCase()+"?\\n"+path+"\\n\\nTHIS CANNOT BE UNDONE.")){
+        return;
+    }
+
+    const fd=new FormData();
+    fd.append("mode",mode);
+    fd.append("path",path);
+
+    const r=await req("/api/admin/delete",{method:"POST",body:fd});
+    if(!r)return;
+    const d=await r.json();
+
+    if(!d.success){
+        alert("DELETE ERROR: "+(d.error||"FAILED"));
+        return;
+    }
+    await loadFiles(mode);
+}
+
+async function loadFiles(mode){
+    const box=document.getElementById(mode+"Files");
+    box.textContent="LOADING...";
+
+    const r=await req("/api/admin/files");
+    if(!r)return;
+    const d=await r.json();
+
+    if(!d.success){
+        box.textContent=d.error||"ERROR";
+        return;
+    }
+
+    const files=d[mode]||[];
+    const dirs=d[mode+"_dirs"]||[];
+    box.innerHTML="";
+
+    if(!files.length&&!dirs.length){
+        box.textContent="NO "+mode.toUpperCase()+" FILES OR FOLDERS";
+        return;
+    }
+
+    function addRow(path,type,file){
+        const row=document.createElement("div");
+        row.className="file-row";
+
+        const name=document.createElement("b");
+        name.textContent=(type==="folder"?"[FOLDER] ":"[FILE] ")+path;
+        row.appendChild(name);
+
+        if(file){
+            const info=document.createElement("div");
+            info.className="small";
+            info.textContent="SIZE: "+file.size+" BYTES | SHA256: "+file.sha256;
+            row.appendChild(info);
+        }
+
+        const del=document.createElement("button");
+        del.type="button";
+        del.textContent="DELETE "+type.toUpperCase();
+        del.onclick=()=>deleteEntry(mode,path,type);
+        row.appendChild(del);
+        box.appendChild(row);
+    }
+
+    dirs.forEach(path=>addRow(path,"folder",null));
+    files.forEach(file=>addRow(file.path||file.name,"file",file));
+}
+
+async function verify(){
+    const s=document.getElementById("verifyStatus");
+    s.textContent="CHECKING...";
+
+    try{
+        const health=await fetch("/api/health");
+        const config=await fetch("/api/config");
+
+        const h=await health.json();
+        const c=await config.json();
+
+        s.textContent=
+            "SERVER: "+(h.server||"UNKNOWN")+
+            "\nSYSTEM: "+(h.system||"UNKNOWN")+
+            "\nCONFIG: "+(c.success?"ONLINE":"ERROR")+
+            "\nAPP CODE: "+(c.app_code||c.config?.app_code||"UNKNOWN")+
+            "\nAPP VERSION: "+(c.app_version||c.config?.app_version||"UNKNOWN")+
+            "\nON/OFF API: READY";
+    }catch(e){
+        s.textContent="ERROR: "+e;
+    }
+}
+
+function escapeHtml(v){
+    return String(v)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+}
+</script>
+</body>
+</html>
