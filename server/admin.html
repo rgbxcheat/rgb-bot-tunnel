@@ -1,421 +1,311 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RGB BOT V1 ADMIN</title>
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex,nofollow">
+<title>RGB BOT V1 — Control Center</title>
 <style>
+:root{color-scheme:dark;--bg:#080a10;--panel:#101522;--panel2:#151d2d;--line:#263149;--text:#eef2ff;--muted:#8995ad;--purple:#895cff;--green:#27d69a;--red:#ff6577;--blue:#63a8ff}
 *{box-sizing:border-box}
-body{
- margin:0;background:#080808;color:#eee;font-family:Arial,sans-serif;
- min-height:100vh;padding:25px
-}
-.wrap{max-width:900px;margin:auto}
-.card{
- background:#111;border:1px solid #292929;padding:22px;margin-bottom:18px;
-}
-h1,h2,h3{margin-top:0}
-h1{color:#9d2cff}
-label{display:block;margin:14px 0 7px;color:#aaa}
-input,textarea,select{
- width:100%;padding:13px;background:#080808;color:#fff;
- border:1px solid #333;font-size:15px
-}
-textarea{min-height:130px;resize:vertical}
-button{
- padding:13px 18px;background:#9d2cff;color:white;border:0;
- cursor:pointer;font-weight:bold;margin-top:12px
-}
-button:hover{background:#7d18d8}
-.status{
- margin-top:12px;padding:12px;background:#090909;
- border:1px solid #292929;white-space:pre-wrap
-}
-.hidden{display:none}
-.file-row{
- border-top:1px solid #292929;padding:12px 0;
- font-family:monospace;word-break:break-all
-}
-.small{color:#888;font-size:12px}
+body{margin:0;background:radial-gradient(ellipse at 50% -20%,#242044 0,transparent 55%),var(--bg);color:var(--text);font:14px Inter,system-ui,Arial,sans-serif}
+button,input{font:inherit}
+button{cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#192237;color:var(--text);font-weight:700;transition:.15s}
+button:hover{border-color:#7658c8;filter:brightness(1.12)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.primary{background:linear-gradient(120deg,#7045d8,#9868ff);border:0;color:white}
+.danger{color:#ff9aa5;border-color:#713746;background:#281923}
+.soft{background:#121a29}
+input[type=password],input[type=text]{width:100%;padding:13px;background:#090e18;border:1px solid var(--line);border-radius:10px;color:white;outline:none}
+input:focus{border-color:var(--purple)}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.loginbox{width:min(410px,100%);padding:30px;background:rgba(16,21,34,.96);border:1px solid var(--line);border-radius:20px;box-shadow:0 25px 90px #0008}
+.logo{font-size:23px;font-weight:950;letter-spacing:2px}
+.logo span{color:#a98aff}
+.sub{color:var(--muted);line-height:1.6}
+.loginbox input{margin:18px 0 12px}
+.loginbox button{width:100%;padding:13px}
+#error{color:#ff8290;min-height:20px;margin-top:12px}
+#app{display:none;min-height:100vh}
+.shell{max-width:1500px;margin:auto;padding:26px}
+header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:25px}
+header h1{font-size:25px;margin:0}
+.header-right{display:flex;align-items:center;gap:12px}
+.status{color:var(--muted);font-size:12px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:7px;box-shadow:0 0 12px #27d69a}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.stat,.card{background:linear-gradient(145deg,#111827,#0e1420);border:1px solid var(--line);border-radius:15px}
+.stat{padding:16px 18px}
+.stat label{display:block;color:var(--muted);font-size:11px;letter-spacing:1px}
+.stat strong{display:block;font-size:23px;margin-top:7px}
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:17px}
+.card{overflow:hidden;min-width:0}
+.cardhead{display:flex;align-items:center;justify-content:space-between;padding:17px 18px;border-bottom:1px solid var(--line)}
+.cardhead h2{margin:0;font-size:18px;letter-spacing:1.5px}
+.on h2{color:var(--green)}.off h2{color:var(--red)}
+.count{font-size:11px;color:var(--muted)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:13px;border-bottom:1px solid var(--line)}
+.toolbar button{flex:1;min-width:90px}
+.entries{padding:12px;min-height:250px;max-height:52vh;overflow:auto}
+.entry{display:flex;align-items:center;gap:9px;padding:10px;margin:6px 0;background:#151e2d;border:1px solid #222e43;border-radius:10px;min-width:0}
+.entry .name{flex:1;min-width:0;overflow-wrap:anywhere}
+.entry small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.entry-actions{display:flex;gap:5px;flex-shrink:0}
+.entry-actions button{padding:7px 9px;font-size:11px}
+.empty{padding:65px 10px;text-align:center;color:var(--muted)}
+.bottom{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bottom button{min-width:180px}
+#message{min-height:24px;text-align:center;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;margin:14px}
+#filePicker{display:none}
+.modal{display:none;position:fixed;inset:0;background:#000a;z-index:5;place-items:center;padding:18px}
+.modalbox{width:min(420px,100%);padding:22px;background:#111827;border:1px solid var(--line);border-radius:16px}
+.modalbox h3{margin-top:0}
+.modalbox input{margin:10px 0 15px}
+.modal-actions{display:flex;gap:9px}
+.modal-actions button{flex:1}
+@media(max-width:800px){.shell{padding:15px 10px}.columns{grid-template-columns:1fr}.entries{max-height:42vh;min-height:160px}header h1{font-size:19px}.stats{gap:7px}.stat{padding:12px}.stat strong{font-size:19px}.entry-actions button{padding:7px}}
 </style>
 </head>
-
 <body>
-<div class="wrap">
+<section class="login" id="login">
+ <div class="loginbox">
+  <div class="logo">RGB <span>BOT V1</span></div>
+  <p class="sub">SECURE ADMINISTRATION<br>Sign in to manage your ON / OFF files.</p>
+  <form id="loginForm">
+   <input id="password" type="password" placeholder="Administrator access code" autocomplete="current-password" required>
+   <button class="primary" id="loginButton">ACCESS CONTROL CENTER</button>
+  </form>
+  <div id="error"></div>
+ </div>
+</section>
 
-<div id="login" class="card">
-<h1>RGB BOT V1</h1>
-<h3>ADMIN LOGIN</h3>
-<label>ADMIN CODE</label>
-<input id="adminCode" type="password" autocomplete="off">
-<button onclick="login()">ENTER ADMIN</button>
-<div id="loginStatus" class="status">READY</div>
+<div id="app">
+ <main class="shell">
+  <header>
+   <div><div class="logo">RGB <span>CONTROL</span></div><h1>Free Fire Manager</h1><div class="status" id="connection">CHECKING SESSION...</div></div>
+   <div class="header-right"><button class="soft" id="refreshBtn">REFRESH</button><button class="danger" id="logoutBtn">LOG OUT</button></div>
+  </header>
+  <section class="stats">
+   <div class="stat"><label>ON FILES</label><strong id="onStat">0</strong></div>
+   <div class="stat"><label>OFF FILES</label><strong id="offStat">0</strong></div>
+   <div class="stat"><label>CONNECTION</label><strong id="onlineStat" style="color:var(--green)">—</strong></div>
+  </section>
+  <div class="columns">
+   <section class="card off">
+    <div class="cardhead"><h2>OFF MODE</h2><span class="count" id="offCount">0 ITEMS</span></div>
+    <div class="toolbar">
+     <button onclick="pickFiles('off')">ADD FILES</button>
+     <button onclick="pickFolder('off')">ADD FOLDER</button>
+     <button onclick="createFolder('off')">NEW FOLDER</button>
+     <button class="danger" onclick="deleteAll('off')">CLEAR MODE</button>
+    </div>
+    <div class="entries" id="offEntries"><div class="empty">Loading files...</div></div>
+   </section>
+   <section class="card on">
+    <div class="cardhead"><h2>ON MODE</h2><span class="count" id="onCount">0 ITEMS</span></div>
+    <div class="toolbar">
+     <button onclick="pickFiles('on')">ADD FILES</button>
+     <button onclick="pickFolder('on')">ADD FOLDER</button>
+     <button onclick="createFolder('on')">NEW FOLDER</button>
+     <button class="danger" onclick="deleteAll('on')">CLEAR MODE</button>
+    </div>
+    <div class="entries" id="onEntries"><div class="empty">Loading files...</div></div>
+   </section>
+  </div>
+  <div class="bottom"><button class="primary" id="applyBtn" onclick="applyChanges()">SAVE / VERIFY UPDATE</button></div>
+  <div id="message" role="status"></div>
+  <input id="filePicker" type="file" multiple>
+  <input id="folderPicker" type="file" webkitdirectory directory multiple>
+ </main>
 </div>
 
-<div id="panel" class="hidden">
-
-<div class="card">
-<h1>RGB BOT V1 CONTROL</h1>
-
-<label>GLOBAL APP CODE</label>
-<input id="appCode" placeholder="RGBV">
-
-<button onclick="saveAppCode()">SAVE GLOBAL CODE</button>
-
-<div id="configStatus" class="status">READY</div>
-</div>
-
-<div class="card">
-<h2>OFF FILE</h2>
-
-<label>FULL FILE PATH</label>
-<input id="offPath"
- placeholder="Android/data/example/file">
-
-<label>SELECT FILE</label>
-<input id="offFile" type="file">
-
-<button onclick="upload('off')">UPLOAD OFF</button>
-
-<div id="offStatus" class="status">READY</div>
-<div id="offFiles" class="status">Loading...</div>
-
-<label>FOLDER PATH (INSIDE OFF)</label>
-<input id="offFolderPath" placeholder="Example: Android/data/example">
-
-<button type="button" onclick="createFolder('off')">CREATE FOLDER</button>
-<button type="button" onclick="uploadFolder('off')">UPLOAD FOLDER</button>
-<input id="offFolderInput" type="file" webkitdirectory multiple>
-<div id="offFolderStatus" class="status">READY</div>
-</div>
-
-<div class="card">
-<h2>ON FILE</h2>
-
-<label>FULL FILE PATH</label>
-<input id="onPath"
- placeholder="Android/data/example/file">
-
-<label>SELECT FILE</label>
-<input id="onFile" type="file">
-
-<button onclick="upload('on')">UPLOAD ON</button>
-
-<div id="onStatus" class="status">READY</div>
-<div id="onFiles" class="status">Loading...</div>
-
-<label>FOLDER PATH (INSIDE ON)</label>
-<input id="onFolderPath" placeholder="Example: Android/data/example">
-
-<button type="button" onclick="createFolder('on')">CREATE FOLDER</button>
-<button type="button" onclick="uploadFolder('on')">UPLOAD FOLDER</button>
-<input id="onFolderInput" type="file" webkitdirectory multiple>
-<div id="onFolderStatus" class="status">READY</div>
-</div>
-
-<div class="card">
-<h2>SERVER / APP STATUS</h2>
-<button onclick="verify()">VERIFY EVERYTHING</button>
-<div id="verifyStatus" class="status">READY</div>
-</div>
-
-</div>
+<div class="modal" id="renameModal">
+ <div class="modalbox">
+  <h3>Rename item</h3>
+  <p class="sub" id="renamePath"></p>
+  <input id="renameInput" type="text" placeholder="New name">
+  <div class="modal-actions"><button class="soft" onclick="closeRename()">CANCEL</button><button class="primary" onclick="submitRename()">RENAME</button></div>
+ </div>
 </div>
 
 <script>
-async function req(url, options={}){
-    const r=await fetch(url,{
-        credentials:"same-origin",
-        ...options
-    });
+const $=id=>document.getElementById(id);
+let cache={on:[],off:[],on_dirs:[],off_dirs:[]};
+let busy=false, pendingRename=null, refreshTimer=null;
 
-    if(r.redirected && r.url.includes("/admin/login")){
-        document.getElementById("login").classList.remove("hidden");
-        document.getElementById("panel").classList.add("hidden");
-        return null;
-    }
+function message(s){$("message").textContent=s}
+function count(mode){return (cache[mode]||[]).length+(cache[mode+"_dirs"]||[]).length}
+function sizeText(n){if(n<1024)return n+" B";if(n<1048576)return (n/1024).toFixed(1)+" KB";return (n/1048576).toFixed(1)+" MB"}
 
-    return r;
+async function api(url,options={}){
+ const r=await fetch(url,{credentials:"same-origin",cache:"no-store",...options});
+ if(r.status===401||r.redirected)throw new Error("SESSION_EXPIRED");
+ let data;
+ try{data=await r.json()}catch{throw new Error("SERVER_RESPONSE_INVALID")}
+ if(!r.ok||data.success===false)throw new Error(data.error||"REQUEST_FAILED");
+ return data;
 }
-
-async function login(){
-    const code=document.getElementById("adminCode").value;
-    const status=document.getElementById("loginStatus");
-
-    status.textContent="CHECKING...";
-
-    const fd=new FormData();
-    fd.append("password",code);
-
-    const r=await fetch("/admin/login",{
-        method:"POST",
-        body:fd,
-        credentials:"same-origin"
-    });
-
-    if(r.redirected || r.ok){
-        document.getElementById("login").classList.add("hidden");
-        document.getElementById("panel").classList.remove("hidden");
-        status.textContent="LOGIN OK";
-        loadConfig();
-        loadFiles("on");
-        loadFiles("off");
-        verify();
-    }else{
-        status.textContent="INVALID ADMIN CODE";
-    }
+async function verifySession(){
+ const data=await api("/api/admin/files");
+ if(!data||!Array.isArray(data.on)||!Array.isArray(data.off))throw new Error("INVALID_FILE_LIST");
+ cache=data;showApp();renderAll();
+ $("connection").innerHTML='<span class="dot"></span>CONNECTED';
+ $("onlineStat").textContent="ONLINE";
 }
-
-async function loadConfig(){
-    const r=await req("/api/admin/config");
-    if(!r)return;
-
-    const d=await r.json();
-
-    if(d.success){
-        document.getElementById("appCode").value=d.config.app_code||"RGBV";
-        document.getElementById("configStatus").textContent=
-            "CURRENT GLOBAL CODE: "+(d.config.app_code||"");
-    }else{
-        document.getElementById("configStatus").textContent=d.error||"ERROR";
-    }
+function showApp(){$("login").style.display="none";$("app").style.display="block"}
+function showLogin(){$("app").style.display="none";$("login").style.display="grid"}
+async function loginAdmin(e){
+ e.preventDefault();
+ const button=$("loginButton");button.disabled=true;button.textContent="VERIFYING...";
+ $("error").textContent="";
+ try{
+  const body=new URLSearchParams({password:$("password").value});
+  const r=await fetch("/admin/login",{method:"POST",body,credentials:"same-origin",cache:"no-store"});
+  if(!r.ok)throw new Error("LOGIN_REJECTED");
+  await verifySession();
+  $("password").value="";
+  startRefresh();
+ }catch(err){
+  $("error").textContent=err.message==="SESSION_EXPIRED"?"Access code incorrect or session was not created.":err.message;
+  showLogin();
+ }finally{button.disabled=false;button.textContent="ACCESS CONTROL CENTER"}
 }
-
-async function saveAppCode(){
-    const code=document.getElementById("appCode").value.trim();
-    const s=document.getElementById("configStatus");
-
-    if(!code){
-        s.textContent="ERROR: APP CODE REQUIRED";
-        return;
-    }
-
-    s.textContent="SAVING...";
-
-    const r=await req("/api/admin/config",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-            app_code:code
-        })
-    });
-
-    if(!r)return;
-
-    const d=await r.json();
-
-    s.textContent=d.success
-        ? "GLOBAL CODE UPDATED FOR SERVER: "+code
-        : "ERROR: "+(d.error||"SAVE FAILED");
+async function logout(){
+ stopRefresh();
+ try{await fetch("/admin/logout",{credentials:"same-origin",cache:"no-store"})}catch(e){}
+ showLogin();$("password").value="";$("error").textContent="You have signed out.";
 }
-
-async function upload(mode){
-    const path=document.getElementById(mode+"Path").value.trim();
-    const input=document.getElementById(mode+"File");
-    const status=document.getElementById(mode+"Status");
-
-    if(!path){
-        status.textContent="ERROR: FULL FILE PATH REQUIRED";
-        return;
-    }
-
-    if(!input.files.length){
-        status.textContent="ERROR: SELECT A FILE";
-        return;
-    }
-
-    status.textContent="UPLOADING...";
-
-    const fd=new FormData();
-    fd.append("mode",mode);
-    fd.append("path",path);
-    fd.append("file",input.files[0]);
-
-    const r=await req("/api/admin/upload",{
-        method:"POST",
-        body:fd
-    });
-
-    if(!r)return;
-
-    const d=await r.json();
-
-    if(!d.success){
-        status.textContent="ERROR: "+(d.error||"UPLOAD FAILED");
-        return;
-    }
-
-    status.textContent=
-        "UPLOADED\nPATH: "+d.path+
-        "\nSIZE: "+d.size+
-        "\nSHA256: "+d.sha256;
-
-    input.value="";
-    await loadFiles(mode);
+function renderMode(mode){
+ const root=$(mode+"Entries"),files=cache[mode]||[],dirs=cache[mode+"_dirs"]||[];
+ $(mode+"Count").textContent=count(mode)+" ITEMS";
+ root.replaceChildren();
+ if(!files.length&&!dirs.length){const e=document.createElement("div");e.className="empty";e.textContent="NO FILES OR FOLDERS";root.append(e);return}
+ const all=[...dirs.map(path=>({path,type:"folder"})),...files.map(x=>({path:x.path,type:"file",size:x.size}))];
+ all.sort((a,b)=>a.path.localeCompare(b.path));
+ for(const item of all){
+  const row=document.createElement("div");row.className="entry";
+  const name=document.createElement("div");name.className="name";
+  const title=document.createElement("div");title.textContent=(item.type==="folder"?"▰ ":"▧ ")+item.path;
+  name.append(title);
+  if(item.type==="file"){const detail=document.createElement("small");detail.textContent=sizeText(item.size);name.append(detail)}
+  const actions=document.createElement("div");actions.className="entry-actions";
+  const rename=document.createElement("button");rename.textContent="RENAME";rename.onclick=()=>openRename(mode,item.path);
+  const del=document.createElement("button");del.textContent="DELETE";del.className="danger";del.onclick=()=>deleteItem(mode,item.path);
+  actions.append(rename,del);row.append(name,actions);root.append(row);
+ }
 }
-
+function renderAll(){
+ renderMode("on");renderMode("off");
+ $("onStat").textContent=(cache.on||[]).length;
+ $("offStat").textContent=(cache.off||[]).length;
+}
+async function loadFiles(silent=false){
+ if(busy)return;
+ try{
+  const data=await api("/api/admin/files");
+  cache=data;renderAll();
+  $("connection").innerHTML='<span class="dot"></span>CONNECTED';
+  $("onlineStat").textContent="ONLINE";
+ }catch(e){
+  if(e.message==="SESSION_EXPIRED"){stopRefresh();showLogin();$("error").textContent="Session expired. Please log in again."}
+  else{$("connection").textContent="CONNECTION ERROR";$("onlineStat").textContent="ERROR";if(!silent)message("Refresh failed: "+e.message)}
+ }
+}
+function startRefresh(){stopRefresh();refreshTimer=setInterval(()=>{if(!busy)loadFiles(true)},20000)}
+function stopRefresh(){if(refreshTimer){clearInterval(refreshTimer);refreshTimer=null}}
+function pickFiles(mode){
+ const p=$("filePicker");p.value="";p.onchange=()=>uploadFiles(mode,false);p.click()
+}
+function pickFolder(mode){
+ const p=$("folderPicker");p.value="";p.onchange=()=>uploadFiles(mode,true);p.click()
+}
+async function uploadFiles(mode,isFolder){
+ const picker=isFolder?$("folderPicker"):$("filePicker");
+ const files=[...picker.files];if(!files.length)return;
+ busy=true;message("Uploading "+files.length+" file(s) to "+mode.toUpperCase()+"...");
+ try{
+  if(isFolder){
+   const fd=new FormData();fd.append("mode",mode);
+   const first=files[0].webkitRelativePath||files[0].name;
+   const folder=first.split("/")[0];
+   fd.append("path",folder);
+   for(const f of files)fd.append("files",f,f.webkitRelativePath||f.name);
+   await api("/api/admin/upload-folder",{method:"POST",body:fd});
+  }else{
+   for(const f of files){
+    const fd=new FormData();fd.append("mode",mode);
+    fd.append("path",f.name);fd.append("file",f,f.name);
+    await api("/api/admin/upload",{method:"POST",body:fd});
+   }
+  }
+  message("Upload complete. "+files.length+" file(s) processed.");
+ }catch(e){message("UPLOAD ERROR: "+e.message)}
+ finally{busy=false;await loadFiles(true);picker.value=""}
+}
 async function createFolder(mode){
-    const path=document.getElementById(mode+"FolderPath").value.trim();
-    const status=document.getElementById(mode+"FolderStatus");
-
-    if(!path){
-        status.textContent="ERROR: FOLDER PATH REQUIRED";
-        return;
-    }
-
-    status.textContent="CREATING...";
-    const fd=new FormData();
-    fd.append("mode",mode);
-    fd.append("path",path);
-
-    const r=await req("/api/admin/folder",{method:"POST",body:fd});
-    if(!r)return;
-    const d=await r.json();
-
-    status.textContent=d.success
-        ? "FOLDER CREATED: "+d.path
-        : "ERROR: "+(d.error||"CREATE FAILED");
-
-    if(d.success) await loadFiles(mode);
+ const path=prompt("Folder path to create inside "+mode.toUpperCase()+":");
+ if(path===null)return;if(!path.trim())return message("Folder path is required.");
+ const fd=new FormData();fd.append("mode",mode);fd.append("path",path.trim());
+ busy=true;
+ try{await api("/api/admin/folder",{method:"POST",body:fd});message("Folder created.");}
+ catch(e){message("CREATE FOLDER ERROR: "+e.message)}
+ finally{busy=false;await loadFiles(true)}
 }
-
-async function uploadFolder(mode){
-    const path=document.getElementById(mode+"FolderPath").value.trim();
-    const input=document.getElementById(mode+"FolderInput");
-    const status=document.getElementById(mode+"FolderStatus");
-
-    if(!path){
-        status.textContent="ERROR: DESTINATION FOLDER REQUIRED";
-        return;
-    }
-    if(!input.files.length){
-        status.textContent="ERROR: SELECT A FOLDER";
-        return;
-    }
-
-    status.textContent="UPLOADING...";
-    const fd=new FormData();
-    fd.append("mode",mode);
-    fd.append("path",path);
-
-    for(const file of input.files){
-        fd.append("files",file,file.webkitRelativePath||file.name);
-    }
-
-    const r=await req("/api/admin/upload-folder",{method:"POST",body:fd});
-    if(!r)return;
-    const d=await r.json();
-
-    if(!d.success){
-        status.textContent="ERROR: "+(d.error||"UPLOAD FAILED");
-        return;
-    }
-
-    status.textContent="UPLOADED FILES: "+(d.files||[]).length;
-    input.value="";
-    await loadFiles(mode);
+async function deleteItem(mode,path){
+ if(!confirm("Delete this item?\n"+path))return;
+ const fd=new FormData();fd.append("mode",mode);fd.append("path",path);
+ busy=true;
+ try{await api("/api/admin/delete",{method:"POST",body:fd});message("Deleted: "+path)}
+ catch(e){message("DELETE ERROR: "+e.message)}
+ finally{busy=false;await loadFiles(true)}
 }
-
-async function deleteEntry(mode,path,type){
-    if(!confirm("DELETE "+type.toUpperCase()+"?\\n"+path+"\\n\\nTHIS CANNOT BE UNDONE.")){
-        return;
-    }
-
-    const fd=new FormData();
-    fd.append("mode",mode);
-    fd.append("path",path);
-
-    const r=await req("/api/admin/delete",{method:"POST",body:fd});
-    if(!r)return;
-    const d=await r.json();
-
-    if(!d.success){
-        alert("DELETE ERROR: "+(d.error||"FAILED"));
-        return;
-    }
-    await loadFiles(mode);
+async function deleteAll(mode){
+ const files=cache[mode]||[],dirs=cache[mode+"_dirs"]||[];
+ if(!files.length&&!dirs.length)return message(mode.toUpperCase()+" is already empty.");
+ if(!confirm("Permanently delete ALL items in "+mode.toUpperCase()+"?\nThis action cannot be undone."))return;
+ const paths=[...files.map(x=>x.path),...dirs].sort((a,b)=>b.split("/").length-a.split("/").length);
+ busy=true;let deleted=0;
+ try{
+  for(const path of paths){
+   const fd=new FormData();fd.append("mode",mode);fd.append("path",path);
+   try{await api("/api/admin/delete",{method:"POST",body:fd});deleted++}
+   catch(e){if(!String(e.message).includes("ITEM_NOT_FOUND"))throw e}
+  }
+  message(mode.toUpperCase()+" cleared. Items removed: "+deleted);
+ }catch(e){message("CLEAR ERROR: "+e.message)}
+ finally{busy=false;await loadFiles(true)}
 }
-
-async function loadFiles(mode){
-    const box=document.getElementById(mode+"Files");
-    box.textContent="LOADING...";
-
-    const r=await req("/api/admin/files");
-    if(!r)return;
-    const d=await r.json();
-
-    if(!d.success){
-        box.textContent=d.error||"ERROR";
-        return;
-    }
-
-    const files=d[mode]||[];
-    const dirs=d[mode+"_dirs"]||[];
-    box.innerHTML="";
-
-    if(!files.length&&!dirs.length){
-        box.textContent="NO "+mode.toUpperCase()+" FILES OR FOLDERS";
-        return;
-    }
-
-    function addRow(path,type,file){
-        const row=document.createElement("div");
-        row.className="file-row";
-
-        const name=document.createElement("b");
-        name.textContent=(type==="folder"?"[FOLDER] ":"[FILE] ")+path;
-        row.appendChild(name);
-
-        if(file){
-            const info=document.createElement("div");
-            info.className="small";
-            info.textContent="SIZE: "+file.size+" BYTES | SHA256: "+file.sha256;
-            row.appendChild(info);
-        }
-
-        const del=document.createElement("button");
-        del.type="button";
-        del.textContent="DELETE "+type.toUpperCase();
-        del.onclick=()=>deleteEntry(mode,path,type);
-        row.appendChild(del);
-        box.appendChild(row);
-    }
-
-    dirs.forEach(path=>addRow(path,"folder",null));
-    files.forEach(file=>addRow(file.path||file.name,"file",file));
+function openRename(mode,path){
+ pendingRename={mode,path};$("renamePath").textContent=path;
+ $("renameInput").value=path.split("/").pop();
+ $("renameModal").style.display="grid";$("renameInput").focus();$("renameInput").select();
 }
-
-async function verify(){
-    const s=document.getElementById("verifyStatus");
-    s.textContent="CHECKING...";
-
-    try{
-        const health=await fetch("/api/health");
-        const config=await fetch("/api/config");
-
-        const h=await health.json();
-        const c=await config.json();
-
-        s.textContent=
-            "SERVER: "+(h.server||"UNKNOWN")+
-            "\nSYSTEM: "+(h.system||"UNKNOWN")+
-            "\nCONFIG: "+(c.success?"ONLINE":"ERROR")+
-            "\nAPP CODE: "+(c.app_code||c.config?.app_code||"UNKNOWN")+
-            "\nAPP VERSION: "+(c.app_version||c.config?.app_version||"UNKNOWN")+
-            "\nON/OFF API: READY";
-    }catch(e){
-        s.textContent="ERROR: "+e;
-    }
+function closeRename(){$("renameModal").style.display="none";pendingRename=null}
+async function submitRename(){
+ if(!pendingRename)return;
+ const newName=$("renameInput").value.trim();if(!newName)return;
+ const fd=new FormData();fd.append("mode",pendingRename.mode);fd.append("path",pendingRename.path);fd.append("new_name",newName);
+ busy=true;
+ try{await api("/api/admin/rename",{method:"POST",body:fd});message("Renamed successfully.");closeRename()}
+ catch(e){message("RENAME ERROR: "+e.message)}
+ finally{busy=false;await loadFiles(true)}
 }
-
-function escapeHtml(v){
-    return String(v)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
+async function applyChanges(){
+ const btn=$("applyBtn");btn.disabled=true;btn.textContent="VERIFYING...";
+ try{
+  const data=await api("/api/admin/files");cache=data;renderAll();
+  message("UPDATE VERIFIED — ON: "+data.on.length+" file(s), OFF: "+data.off.length+" file(s). App will read the latest server files.");
+ }catch(e){message("UPDATE FAILED: "+e.message)}
+ finally{btn.disabled=false;btn.textContent="SAVE / VERIFY UPDATE"}
 }
+$("loginForm").addEventListener("submit",loginAdmin);
+$("refreshBtn").addEventListener("click",()=>loadFiles(false));
+$("logoutBtn").addEventListener("click",logout);
+(async()=>{
+ try{await verifySession();startRefresh()}
+ catch(e){showLogin();$("error").textContent=e.message==="SESSION_EXPIRED"?"Please enter your administrator access code.":"Server is unavailable: "+e.message}
+})();
 </script>
 </body>
 </html>
